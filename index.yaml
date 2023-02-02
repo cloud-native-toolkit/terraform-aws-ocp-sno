@@ -1,0 +1,9 @@
+name: aws-ocp-sno
+type: terraform
+description: Module to provision ocp-sno on aws
+tags:
+  - tools
+  - devops
+versions: []
+cloudProvider: aws
+id: github.com/cloud-native-toolkit/terraform-aws-ocp-sno
