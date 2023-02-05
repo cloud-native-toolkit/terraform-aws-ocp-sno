@@ -162,7 +162,7 @@ module "openshift-cluster" {
     base_domain_name      = var.base_domain_name
     cluster_name          = var.cluster_name
     resource_group_name   = var.resource_group_name
-    pull_secret_file      = var.pull_secret
+    pull_secret           = var.pull_secret
     private_subnet        = module.private_subnet.ids[0]
     public_subnet         = module.public_subnet.ids[0]
     vpc_cidr              = module.vpc.vpc_cidr
