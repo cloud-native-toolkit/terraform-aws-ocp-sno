@@ -5,7 +5,7 @@ module "vpc" {
   provision             = true
   internal_cidr         = "10.0.0.0/20"
   name_prefix           = var.name_prefix
-  resource_group_name   = var.resource_group_name
+  resource_group_name   = var.resource_group
 }
 
 module "igw" {
@@ -13,7 +13,7 @@ module "igw" {
 
   name_prefix           = var.name_prefix
   provision             = true
-  resource_group_name   = var.resource_group_name
+  resource_group_name   = var.resource_group
   vpc_name              = module.vpc.vpc_name
 }
 
@@ -24,7 +24,7 @@ module "public_subnet" {
   name_prefix           = var.name_prefix
   provision             = true
   region                = var.region
-  resource_group_name   = var.resource_group_name
+  resource_group_name   = var.resource_group
   vpc_name              = module.vpc.vpc_name
   gateways              = module.igw.ids
   label                 = "public"
@@ -39,7 +39,7 @@ module "private_subnet" {
   name_prefix           = var.name_prefix
   provision             = true
   region                = var.region
-  resource_group_name   = var.resource_group_name
+  resource_group_name   = var.resource_group
   vpc_name              = module.vpc.vpc_name
   gateways              = module.ngw.ids
   label                 = "private"
@@ -56,6 +56,6 @@ module "ngw" {
   _count                = 1
   name_prefix           = var.name_prefix
   provision             = true
-  resource_group_name   = var.resource_group_name
+  resource_group_name   = var.resource_group
   subnet_ids            = module.public_subnet.subnet_ids
 }
