@@ -4,8 +4,12 @@ name: Verify
 on:
   workflow_call:
     secrets:
-      IBMCLOUD_API_KEY:
-        required: true
+        AWS_ACCESS_KEY_ID:
+          required: true        
+        AWS_SECRET_ACCESS_KEY:
+          required: true 
+        OCP_PULL_SECRET:
+          required: true
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -17,7 +21,7 @@ jobs:
     strategy:
       matrix:
         testcase:
-          - ocp4_latest
+          - aws_ocp_ipi
       fail-fast: false
 
     env:
@@ -34,8 +38,9 @@ jobs:
           clusterId: ${{ matrix.testcase }}
           validateDeployScript: .github/scripts/validate-deploy.sh
         env:
-          TF_VAR_ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
-          IBMCLOUD_API_KEY: ${{ secrets.IBMCLOUD_API_KEY }}
+          TF_VAR_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_pull_secret: ${{ secrets.OCP_PULL_SECRET }}
 
       - name: Verify destroy on ${{ matrix.testcase }}
         uses: cloud-native-toolkit/action-module-verify-destroy@main
@@ -43,5 +48,6 @@ jobs:
         with:
           clusterId: ${{ matrix.testcase }}
         env:
-          TF_VAR_ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
-          IBMCLOUD_API_KEY: ${{ secrets.IBMCLOUD_API_KEY }}
+          TF_VAR_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_pull_secret: ${{ secrets.OCP_PULL_SECRET }}

@@ -1,11 +1,79 @@
 name: aws-ocp-sno
 type: terraform
-description: Module to provision ocp-sno on aws
+description: Module to provision an OpenShift IPI Single Node on AWS
 tags:
-  - tools
-  - devops
+  - aws
+  - openshift
+  - ocp
+  - cluster
 versions:
-  - platforms: []
-    dependencies: []
-    variables: []
+  - platforms:
+      - ocp4
+    providers:
+      - name: aws
+        source: "hashicorp/aws"
+    dependencies:
+      - id: vpc
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-aws-vpc
+            version: ">= 1.6.0"
+      - id: private-subnet
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-aws-vpc-subnets
+            version: ">= 2.3.0"
+      - id: public-subnet
+        optional: true
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-aws-vpc-subnets
+            version: ">= 2.3.0"
+    variables:
+      - name: region
+        scope: global
+      - name: access_key
+        scope: global
+      - name: secret_key
+        scope: global
+      - name: base_domain_name
+        scope: global
+      - name: resource_group_name
+        scope: global
+      - name: pull_secret
+        scope: module
+        important: true
+      - name: cluster_name
+        scope: module
+        important: true
+      - name: openshift_version
+        scope: module
+      - name: node_type
+        scope: module
+      - name: vpc_cidr
+        moduleRef:
+          id: vpc
+          output: vpc_cidr
+      - name: private_subnet
+        moduleRef:
+          id: private-subnet
+          output: ids[0]
+      - name: public_subnet
+        moduleRef:
+          id: public-subnet
+          output: ids[0]
+    outputs:
+      - name: id
+        description: "ID of the created cluster"
+      - name: name
+        description: "Name of the cluster"
+      - name: config_file_path
+        description: "Path to the config file for the cluster"
+      - name: serverURL
+        description: "The url used to connect to the api of the cluster"
+      - name: username
+        description: "Username for the cluster"
+      - name: password
+        description: "Password for the cluster"
+      - name: bin_dir
+        description: "Path to the client binaries"
+      - name: platform
+        description: "Configuration values for the created cluster platform"
 cloudProvider: aws

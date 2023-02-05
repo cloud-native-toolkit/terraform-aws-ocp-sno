@@ -1,0 +1,46 @@
+apiVersion: v1
+baseDomain: ${BASE_DOMAIN}
+compute:
+- architecture: ${ARCHITECTURE}
+  hyperthreading: ${HYPERTHREADING}
+  name: worker
+  platform: {}
+  replicas: 0
+controlPlane:
+  architecture: ${ARCHITECTURE}
+  hyperthreading: ${HYPERTHREADING}
+  name: master
+  platform: 
+    aws:
+      rootVolume:
+        size: ${VOLUME_SIZE}
+        iops: ${VOLUME_IOPS}
+        type: ${VOLUME_TYPE}
+      type: ${NODE_TYPE}
+  replicas: 1
+metadata:
+  name: ${CLUSTER_NAME}
+networking:
+  clusterNetwork:
+  - cidr: ${CLUSTER_CIDR}
+    hostPrefix: ${CLUSTER_HOST_PREFIX}
+  machineNetwork:
+  - cidr: ${MACHINE_CIDR}
+  networkType: ${NETWORK_TYPE}
+  serviceNetwork:
+  - ${SERVICE_NETWORK_CIDR}
+platform:
+  aws:
+    region: ${AWS_REGION}
+    userTags:
+        ResourceGroup: ${RESOURCE_GROUP}
+    subnets:
+      - "${PRIVATE_SUBNET_ID}"
+%{if PUBLISH == "External" }
+      - "${PUBLIC_SUBNET_ID}"
+%{ endif }
+publish: ${PUBLISH}
+pullSecret: '${PULL_SECRET}'
+%{ if PUBLIC_SSH_KEY != "" }
+sshKey: ${PUBLIC_SSH_KEY}
+%{ endif }
