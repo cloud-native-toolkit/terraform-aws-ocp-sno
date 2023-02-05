@@ -8,7 +8,7 @@ variable "region" {
   description = "AWS Region into which to deploy resources"
 }
 
-variable "resource_group_name" {
+variable "resource_group" {
   type = string
   description = "Name for \"ResourceGroup\" tag on all resources"
 }
@@ -26,4 +26,9 @@ variable "secret_key" {
 variable "pull_secret" {
   type = string
   description = "Red Hat OpenShift Pull Secret"
+}
+
+variable "base_domain_name" {
+  type = string
+  description = "Base domain name for cluster"
 }

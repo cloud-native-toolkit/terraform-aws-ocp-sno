@@ -150,7 +150,7 @@ module "acme-cert-apps" {
     aws_access_key          = var.access_key
     aws_secret_key          = var.secret_key
     testing                 = var.use_staging_certs ? true : false
-    create_certificate      = var.byo_certs ? false : true
+    create_certificate      = var.update_ingress_cert ? var.byo_certs ? false : true : false
 }
 
 module "acme-cert-api" {
@@ -161,11 +161,12 @@ module "acme-cert-api" {
     aws_access_key          = var.access_key
     aws_secret_key          = var.secret_key
     testing                 = var.use_staging_certs ? true : false
-    create_certificate      = var.byo_certs ? false : true
+    create_certificate      = var.update_ingress_cert ? var.byo_certs ? false : true : false
 }
 
 module "api-certs" {
     source = "github.com/cloud-native-toolkit/terraform-any-ocp-ipi-certs?ref=v1.0.2"
+    count = var.update_ingress_cert ? 1 : 0
 
     apps_cert         = var.byo_certs ? file(var.apps-cert-file) : module.acme-cert-apps.cert
     apps_key          = var.byo_certs ? file(var.apps-key-file)  : module.acme-cert-apps.key

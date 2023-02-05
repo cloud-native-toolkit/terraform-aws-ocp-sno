@@ -130,7 +130,7 @@ variable "api-ca-file" {
 // Variables below this have default values
 
 variable "update_ingress_cert" {
-  description = "Flag to indicate whether to update the ingress certificates after clusetr creation (default = \"true\")"
+  description = "Flag to indicate whether to update the ingress certificates after cluster creation (default = \"true\")"
   type        = bool
   default     = true
 }
