@@ -1,210 +1,207 @@
-# Starter kit for a Terraform module
+# AWS Single Node OpenShift IPI
 
-This is a Starter kit to help with the creation of Terraform modules. The basic structure of a Terraform module is fairly
-simple and consists of the following basic values:
+## Module Overview
 
-- README.md - provides a description of the module
-- main.tf - defiens the logic for the module
-- variables.tf (optional) - defines the input variables for the module
-- outputs.tf (optional) - defines the values that are output from the module
+This module creates an OpenShift cluster on Amazon Web Services (AWS) using Installer-Provisioned Infrastructure. As such, it interfaces to AWS to create the infrastructure components, such as EC2 instances, for the cluster. It can either create all the infrastructure components including VPC and subnets for a quickstart, or in future, it will support providing an existing VPC environment. The deployed cluster will be across 3 availability zones.
 
-Beyond those files, any other content can be added and organized however you see fit. For example, you can add a `scripts/` directory
-that contains shell scripts executed by a `local-exec` `null_resource` in the terraform module. The contents will depend on what your
-module does and how it does it.
+This module is a cut down version of the full AWS OCP IPI module which is available [here](https://github.com/cloud-native-toolkit/terraform-aws-ocp-ipi)
 
-## Instructions for creating a new module
+### Prerequisites
 
-1. Update the title and description in the README to match the module you are creating
-2. Fill out the remaining sections in the README template as appropriate
-3. Implement your logic in the in the main.tf, variables.tf, and outputs.tf
-4. Use releases/tags to manage release versions of your module
+1. A public domain needs to be configured in Route 53 which will be used by the cluster
+1. The target region must have quota available for an additional VPC with 1 elastic IP and a NAT gateway.
 
-## Module overview
+### Software Dependencies
 
-### Description
+This module depends upon the following software components:
 
-Description of module
-
-**Note:** This module follows the Terraform conventions regarding how provider configuration is defined within the Terraform template and passed into the module - https://www.terraform.io/docs/language/modules/develop/providers.html. The default provider configuration flows through to the module. If different configuration is required for a module, it can be explicitly passed in the `providers` block of the module - https://www.terraform.io/docs/language/modules/develop/providers.html#passing-providers-explicitly.
-
-### Software dependencies
-
-The module depends on the following software components:
-
-#### Command-line tools
-
-- terraform >= v0.15
+#### Command Line Tools
+ - terraform >= 1.2.6
 
 #### Terraform providers
 
-- IBM Cloud provider >= 1.5.3
+- AWS provider >= v4.27.0
 
-### Module dependencies
+### Module Dependencies - new virtual network
 
-This module makes use of the output from other modules:
+When creating a new virtual network, this module has not dependencies on other modules.
 
-- Cluster - github.com/cloud-native-toolkit/terraform-ibm-container-platform.git
-- Namespace - github.com/cloud-native-toolkit/terraform-cluster-namespace.git
-- etc
+### Module Dependencies - existing virtual network
+Will be supported in a future release
 
-### Example usage
+## Input Variables
 
+This module has the following input variables:
+| Variable | Mandatory / Optional | Default Value | Description |
+| -------------------------------- | --------------| ------------------ | ----------------------------------------------------------------------------- |
+| cluster_name | Mandatory |  | The name to give the OpenShift cluster  |
+| base_domain_name | Mandatory |  | The existing Route 53 wildcard base domain name that has been defined. For example, clusters.mydomain.com. |
+| region | Mandatory |  | AWS region into which to deploy the OpenShift cluster |
+| access_key | Mandatory |  | The AWS account access key |
+| secret_key | Mandatory |  | The AWS account secret key |
+| pull_secret | Mandatory | "" | The Red Hat pull secret to access the Red Hat image repositories to install OpenShift. One of pull_secret or pull_secret_file is required. |
+| pull_secret_file | Mandatory | "" | The full path and name of the file containing the Red Hat pull secret to access the Red Hat image repositories for the OpenShift installation. One of pull_secret or pull_secret_file is required. |
+| vpc_cidr | Mandatory |  | Exisitng VPC CIDR  |
+| private_subnet | Mandatory |  | Existing private subnet in availability zone 1  |
+| public_subnet | Mandatory |  | Existing public subnet in availability zone 1 (Set to empty string if making private only) |
+| public_ssh_key | Optional | "" | An existing public key to be used for post implementation node (EC2 Instance) access. If left as default, a new key pair will be generated. |
+| algorithm | Optional | RSA | Algorithm to be utilized if creating a new key |
+| rsa_bits | Optional | 4096 | The number of bits for the RSA key if creating a new RSA key |
+| ecdsa_curve | Optional | P224 | The ECDSA curve value to be utilized if creating a new ECDSA key |
+| private | Optional | false | Flag to indicate whether cluster should be provisioned with private endpoints only (no internet access) |
+| update_ingress_cert | Optional | true | Flag to indicate whether to update the ingress certificates after the cluster has been created |
+| byo_certs | Optional | false | Flag to indicate whether to use BYO ingress certificates or create new ones |
+| acme_registration_email | Optional | me@mydomain.com | Valid email address for certificate registration |
+| use_staging_certs | Optional | false | Flag to indicate whether to generate staging or valid certificates. Used for testing. Note quota limits on valid certificates. |
+| apps-cert-file | Optional | "" | If using BYO certificates, the full path to the file containing the apps (*.apps.cluster.domain) certificate |
+| apps-key-file | Optional | "" | If using BYO certificates, the full path to the file containing the apps (*.apps.cluster.domain) private key |
+| apps-ca-file | Optional | "" | If using BYO certificates, the full path to the file containing the apps (*.apps.cluster.domain) certificate authority bundle |
+| api-cert-file | Optional | "" | If using BYO certificates, the full path to the file containing the api (*.api.cluster.domain) certificate |
+| api-key-file | Optional | "" | If using BYO certificates, the full path to the file containing the api (*.api.cluster.domain) private key |
+| api-ca-file | Optional | "" | If using BYO certificates, the full path to the file containing the api (*.api.cluster.domain) certificate authority bundle |
+| binary_offset | Optional | binaries | The path offset from the terraform root directory into which the binaries will be stored. |
+| install_offset | Optional | install | The path offset from the terraform root directory into which the OpenShift installation files will be stored. |
+| openshift_version | Optional | 4.10 | The version of OpenShift to be installed (must be available in the mirror repository - see below) |
+| hyperthreading | Optional | Enabled | Flag to determine whether hyperthreading should be used for master |
+| architecture | Optional | amd64 | CPU Architecture for the worker nodes |
+| node_type | Optional | m6i.4xlarge | AWS EC2 Instance type for the node. Note the minimum size is 4 vCPU and 16GB RAM |
+| volume_iops | Optional | 400 | Node disk IOPS |
+| volume_size | Optional | 500 | Node disk size (GB) |
+| volume_type | Optional | io1 | Type of disk for worker nodes |
+| cluster_cidr | Optional | 10.128.0.0/14 | CIDR for the internal OpenShift network. |
+| cluster_host_prefix | Optional | 23 | Host prefix for the internal OpenShift network |
+| network_type | Optional | OpenShiftSDN | Network plugin to use for the OpenShift virtual networking. |
+| machine_cidr | Optional | 10.0.0.0/16 | CIDR for the master and worker nodes. Must be the same or a subset of the VPC CIDR |
+| service_network_cidr | Optional | 172.30.0.0/16 | CIDR for the internal OpenShift service network. |
+
+## Example Usage 
 ```hcl-terraform
-module "argocd" {
-  source = "github.com/cloud-native-toolkit/terraform-tools-argocd.git"
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
 
-  cluster_config_file = module.dev_cluster.config_file_path
-  cluster_type        = module.dev_cluster.type
-  app_namespace       = module.dev_cluster_namespaces.tools_namespace_name
-  ingress_subdomain   = module.dev_cluster.ingress_hostname
-  olm_namespace       = module.dev_software_olm.olm_namespace
-  operator_namespace  = module.dev_software_olm.target_namespace
-  name                = "argocd"
+  }
 }
+
+provider "aws" {
+  region        = var.region
+  access_key    = var.access_key
+  secret_key    = var.secret_key
+}
+
+# VPC and internet gateway 
+module "vpc" {
+  source = "github.com/cloud-native-toolkit/terraform-aws-vpc?ref=v1.6.0"
+
+  provision             = true
+  internal_cidr         = "10.0.0.0/20"
+  name_prefix           = var.name_prefix
+  resource_group_name   = var.resource_group_name
+}
+
+module "igw" {
+  source = "github.com/cloud-native-toolkit/terraform-aws-vpc-gateways?ref=v1.2.1"
+
+  name_prefix           = var.name_prefix
+  provision             = true
+  resource_group_name   = var.resource_group_name
+  vpc_name              = module.vpc.vpc_name
+}
+
+# Subnets - 1 public, 1 private
+module "public_subnet" {
+  source = "github.com/cloud-native-toolkit/terraform-aws-vpc-subnets?ref=v2.3.0"
+
+  name_prefix           = var.name_prefix
+  provision             = true
+  region                = var.region
+  resource_group_name   = var.resource_group_name
+  vpc_name              = module.vpc.vpc_name
+  gateways              = module.igw.ids
+  label                 = "public"
+  multi-zone            = false
+  subnet_cidrs          = ["10.0.1.0/24"]
+  acl_rules             = []
+  availability_zones    = []
+}
+module "private_subnet" {
+  source = "github.com/cloud-native-toolkit/terraform-aws-vpc-subnets?ref=v2.3.0"
+
+  name_prefix           = var.name_prefix
+  provision             = true
+  region                = var.region
+  resource_group_name   = var.resource_group_name
+  vpc_name              = module.vpc.vpc_name
+  gateways              = module.ngw.ids
+  label                 = "private"
+  multi-zone            = false
+  subnet_cidrs          = ["10.0.2.0/24"]
+  acl_rules             = []
+  availability_zones    = []
+}
+
+# NAT Gateway
+module "ngw" {
+  source = "github.com/cloud-native-toolkit/terraform-aws-nat-gateway?ref=v1.1.1"
+
+  _count                = 1
+  name_prefix           = var.name_prefix
+  provision             = true
+  resource_group_name   = var.resource_group_name
+  subnet_ids            = module.public_subnet.subnet_ids
+}
+
+module "openshift-cluster" {
+    source = "github.com/cloud-native-toolkit/terraform-aws-ocp-sno"
+
+    region                = var.region
+    access_key            = var.access_key
+    secret_key            = var.secret_key
+    base_domain_name      = var.base_domain_name
+    cluster_name          = var.cluster_name
+    resource_group_name   = var.resource_group_name
+    pull_secret           = var.pull_secret
+    private_subnet        = module.private_subnet.ids[0]
+    public_subnet         = module.public_subnet.ids[0]
+    vpc_cidr              = module.vpc.vpc_cidr
+    private               = false
+    openshift_version     = "4.10"
 ```
 
-## Anatomy of the Terraform module
+## Post Installation
 
-An automation modules is created from a template repository that includes a skeleton of the module logic and the automation framework to validate and release the module.
+Post installation it is necessary to add your own certificate to the cluster to access the console.
 
-### Module logic
-
-The module follows the naming convention of terraform modules:
-
-- **main.tf** - The logic for the module. In the template module, this file is empty.
-- **variables.tf** - The input variables for the module.
-- **outputs.tf** - The output variables for the module. Output variables are used to pass values to downstream modules.
-- **version.tf** - The minimum required terraform version. Currently, this is defaulted to `v0.15`. If any terraform providers are required by the module they would be added here as well.
-- **module.yaml** - The metadata descriptor for the module. Each of the automation modules provides a metadata file that describes the name, description, and external dependencies of the module. Metadata for the input variables can also be provided. When a release of the module is created, an automated workflow will supplement the contents of this file with the input and output variables defined in `variables.tf` and `outputs.tf` and publish the result to `index.yaml` on the `gh-pages` branch.
-- **README.md** - The documentation for the module. An initial readme is provided with instructions at the top and a template for the module documentation at the bottom.
-
-### Module automation
-
-The automation modules rely heavily on [GitHub Actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions) automatically validate changes to the module and release new versions. The GitHub Action workflows are found in **.github/workflows**. There are three workflows provided by default:
-
-#### Verify and release module (verify.yaml)
-
-This workflow runs for pull requests against the `main` branch and when changes are pushed to the `main` branch.
-
-```yaml
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+To access the cluster from the command line (this is using the default binary and install path offsets),
+```
+  $ export KUBECONFIG=./install/auth/kubeconfig
+  $ ./binaries/oc get nodes
 ```
 
-The `verify` job checks out the module and deploys the terraform template in the `test/stages` folder. (More on the details of this folder in a later section.) It applies the testcase(s) listed in the `strategy.matrix.testcase` variable against the terraform template to validate the module logic. It then runs the `.github/scripts/validate-deploy.sh` to verify that everything was deployed successfully. **Note:** This script should be customized to validate the resources provisioned by the module. After the deploy is completed, the destroy logic is also applied to validate the destroy logic and to clean up after the test. The parameters for the test case are defined in https://github.com/cloud-native-toolkit/action-module-verify/tree/main/env. New test cases can be added via pull request.
+## Troubleshooting
 
-The `verifyMetadata` job checks out the module and validates the module metadata against the module metadata schema to ensure the structure is valid.
-
-The `release` job creates a new release of the module. The job only runs if the `verify` and `verifyMetadata` jobs completed successfully AND if the workflow was started from a push to the `main` branch (i.e. not a change to a pull request). The job uses the **release-drafter/release-drafter** GitHub Action to create the release based on the configuration in `.github/release-drafter.yaml`. The configuration looks for labels on the pull request to determine the type of change for the release changelog (`enhancement`, `bug`, `chore`) and which portion of the version number to increment (`major`, `minor`, `patch`).
-
-#### Publish assets (publish-assets.yaml)
-
-This workflow runs when a new release is published (either manually or via an automated process).
-
-```yaml
-on:
-  release:
-    types:
-      - published
+In the event that the openshift installation fails, check the logs under,
+```
+<root_path>/<install_path>/.openshift_install.log
+```
+the default install_path value is install, so from the place you ran the terraform from, it is possible to see the last log entries using the following command,
+```shell
+$ tail -25 ./install/.openshift_install.log
 ```
 
-When a release is created, the module is checked out and the metadata is built and validated. If the metadata is checks out then it is published to the `gh-pages` branch as `index.yaml`
-
-#### Notify (notify.yaml)
-
-This workflow runs when a new release is published (either manually or via an automated process).
-
-```yaml
-on:
-  release:
-    types:
-      - published
+The default kubeconfig for cluster access is located under the same installation directory,
+```
+<root_path>/<install_path>/auth/kubeconfig
 ```
 
-When a release is created, a repository dispatch is sent out to the repositories listed in the `strategy.matrix.repo` variable. By default, the `automation-modules` and `ibm-garage-iteration-zero` repositories are notified. When those modules receive the notification, an automation workflow is triggered on their end to deal with the newly available module version.
-
-### Module metadata
-
-The module metadata adds extra descriptive information about the module that is used to build out the module catalog.
-
-```yaml
-name: ""
-type: terraform
-description: ""
-tags:
-  - tools
-  - devops
-versions:
-  - platforms: []
-    #  providers:
-    #    - name: ibm
-    #      source: "ibm-cloud/ibm"
-    dependencies: []
-    #    - id: cluster
-    #      refs:
-    #        - source: github.com/ibm-garage-cloud/terraform-ibm-container-platform
-    #          version: ">= 1.7.0"
-    #        - source: github.com/ibm-garage-cloud/terraform-k8s-ocp-cluster
-    #          version: ">= 2.0.0"
-    #    - id: namespace
-    #      refs:
-    #        - source: github.com/ibm-garage-cloud/terraform-k8s-namespace
-    #          version: ">= 2.1.0"
-    variables: []
-#    - name: cluster_type
-#      moduleRef:
-#        id: cluster
-#        output: type_code
-#    - name: cluster_ingress_hostname
-#      moduleRef:
-#        id: cluster
-#        output: ingress_hostname
-#    - name: cluster_config_file
-#      moduleRef:
-#        id: cluster
-#        output: config_file_path
-#    - name: tls_secret_name
-#      moduleRef:
-#        id: cluster
-#        output: tls_secret_name
-#    - name: releases_namespace
-#      moduleRef:
-#        id: namespace
-#        output: name
-#        discriminator: tools
+To login to the cluster from the CLI, export this as your KUBECONFIG shell environment value,
+```shell
+$ export KUBECONFIG=./install/auth/kubeconfig
 ```
 
-- **name** - The `name` field is required and must be unique among the other modules. This value is used to reference the module in the Bill of Materials.
-- **description** - The `description` should provide a summary of what the module does.
-- **tags** - The `tags` are used to provide searchable keywords related to the module.
-- **versions** - When the final module metadata is generated, the `versions` array will contain a different entry for each version with a snapshot of the inputs and outputs for that version. In the `module.yaml` file this array should contain a single entry that describes the current version's dependencies and inputs.
-- **versions[*].providers** - Terraform providers used by the module. Required if the ibm terraform provider is used
-- **versions[*].dependencies** - The external modules upon which this module depends. These dependencies are used to offload logic for which this module should not be responsible and retrieve the necessary values from the outputs of these dependencies. Additionally, this allows resources to be shared between modules by referencing to the same external dependency instance.
-- **versions[*].variables** - Additional metadata provided for the input variables. When the metadata is generated for the release, the information for all the input variables is read from `variables.tf` and is supplemented with the information provided here. If there is no additional information to add to a variable it can be excluded from `module.yaml`. Examples of variable metadata that can be added: mapping the variable to the output of a dependency or setting the scope of the variable to `global`, `ignore`, or `module` (the default).
-
-### Module test logic
-
-The `test/stages` folder contains the terraform template needed to execute the module. By convention, each module is defined in its own file. Also by convention, all prereqs or dependencies for the module are named `stage1-xxx` and the module to be tested is named `stage2-xxx`. This test logic will run every time a change is made to the repository to ensure there are no regressions to the module.
-
-## Submitting changes
-
-1. Fork the module git repository into your personal org
-2. In your forked repository, add the following secrets (note: if you are working in the repo in the Cloud Native Toolkit, these secrets are already available):
-  - __IBMCLOUD_API_KEY__ - an API Key to an IBM Cloud account where you can provision the test instances of any resources you need
-3. Create a branch in the forked repository where you will do your work
-4. Create a [draft pull request](https://github.blog/2019-02-14-introducing-draft-pull-requests/) in the Cloud Native Toolkit repository for your branch as soon as you push your first change. Add labels to the pull request for the type of change (`enhancement`, `bug`, `chore`) and the type of release (`major`, `minor`, `patch`) to impact the generated release documentation.
-5. When the changes are completed and the automated checks are running successfully, mark the pull request as "Ready to review".
-6. The module changes will be reviewed and the pull request merged. After the changes are merged, the automation in the repo create a new release of the module.
-
-## Development
-
-### Adding logic and updating the test
-
-1. Start by implementing the logic in `main.tf`, adding required variables to `variables.tf` as necessary.
-2. Update the `test/stages/stage2-xxx.tf` file with any of the required variables.
-3. If the module has dependencies on other modules, add them as `test/stages/stage1-xxx.tf` and reference the output variables as variable inputs.
-4. Review the validation logic in `.github/scripts/validate-deploy.sh` and update as appropriate.
-5. Push the changes to the remote branch and review the check(s) on the pull request. If the checks fail, review the log and make the necessary adjustments.
+You should then be able to obtain details of the cluster, such as (with the default binary path),
+```shell
+$ ./binaries/oc get clusterversion
+```
