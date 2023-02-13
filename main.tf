@@ -81,7 +81,7 @@ resource "local_file" "install_config" {
         PUBLIC_SUBNET_ID        = var.public_subnet
         PULL_SECRET             = local.pull_secret
         PUBLISH                 = var.private ? "Internal" : "External"
-        PUBLIC_SSH_KEY          = var.public_ssh_key == "" ? data.local_file.pub_key[0].content : file(var.public_ssh_key)
+        PUBLIC_SSH_KEY          = var.public_ssh_key == "" ? data.local_file.pub_key[0].content : var.public_ssh_key
     })
     filename        = "${local.install_path}/install-config.yaml"
     file_permission = "0664"
