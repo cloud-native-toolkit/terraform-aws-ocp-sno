@@ -1,5 +1,8 @@
 module "cluster" {
   source = "./module"
+  depends_on = [
+    module.ngw
+  ]
 
   region                = var.region
   access_key            = var.access_key
