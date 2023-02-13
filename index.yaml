@@ -261,6 +261,261 @@ versions:
             - local.cluster_type
         sensitive: true
         description: Configuration values for the created cluster platform
+    version: v1.0.1
+  - platforms:
+      - ocp4
+    providers:
+      - name: aws
+        source: hashicorp/aws
+    dependencies:
+      - id: vpc
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-aws-vpc
+            version: '>= 1.6.0'
+      - id: private-subnet
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-aws-vpc-subnets
+            version: '>= 2.3.0'
+      - id: public-subnet
+        optional: true
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-aws-vpc-subnets
+            version: '>= 2.3.0'
+    variables:
+      - name: region
+        description: AWS region to deploy cluster
+        type: string
+        scope: global
+      - name: access_key
+        description: AWS account access key
+        type: string
+        scope: global
+      - name: secret_key
+        description: AWS account secret key
+        type: string
+        scope: global
+      - name: base_domain_name
+        description: Base domain name (e.g. myclusters.mydomain.com)
+        type: string
+        scope: global
+      - name: cluster_name
+        description: Name of the cluster that prefixes the domain name
+        type: string
+        scope: module
+        important: true
+      - name: resource_group_name
+        description: Name of the environment tag (default = \"Default\")
+        type: string
+        default: Default
+        scope: global
+      - name: pull_secret
+        description: >-
+          Pull secret for OpenShift image repository access and to register the
+          cluster
+        type: string
+        default: ''
+        scope: module
+        important: true
+      - name: pull_secret_file
+        description: >-
+          File with the pull secret for OpenShift image repository access and to
+          register the cluster
+        type: string
+        default: ''
+      - name: vpc_cidr
+        description: CIDR of the existing VPC
+        type: string
+        moduleRef:
+          id: vpc
+          output: vpc_cidr
+      - name: private_subnet
+        description: Existing private subnet name
+        type: string
+        moduleRef:
+          id: private-subnet
+          output: ids[0]
+      - name: public_subnet
+        description: Existing public subnet name
+        type: string
+        moduleRef:
+          id: public-subnet
+          output: ids[0]
+      - name: public_ssh_key
+        description: The SSH Public Key to use for OpenShift Installation
+        type: string
+        default: ''
+      - name: algorithm
+        description: >-
+          Algorithim to be utilized if creating a new key (RSA, ECDSA or
+          ED25519, default = RSA)
+        type: string
+        default: RSA
+      - name: rsa_bits
+        description: Number of bits to use for RSA key (default = 4096)
+        type: number
+        default: '4096'
+      - name: ecdsa_curve
+        description: >-
+          ECDSA Curve value to be utilized for ECDSA key (P224, P256, P521,
+          default = P224)
+        type: string
+        default: P224
+      - name: apps-cert-file
+        description: File containing the apps (*.apps.cluster.domain) certificate.
+        type: string
+        default: ''
+      - name: apps-key-file
+        description: File containing the apps (*.apps.cluster.domain) private key.
+        type: string
+        default: ''
+      - name: apps-ca-file
+        description: >-
+          File containing the apps (*.apps.cluster.domain) certificate authority
+          bundle.
+        type: string
+        default: ''
+      - name: api-cert-file
+        description: File containing the api (api.cluster.domain) certificate.
+        type: string
+        default: ''
+      - name: api-key-file
+        description: File containing the api (api.cluster.domain) private key.
+        type: string
+        default: ''
+      - name: api-ca-file
+        description: >-
+          File containing the api (api.cluster.domain) certificate authority
+          bundle.
+        type: string
+        default: ''
+      - name: update_ingress_cert
+        description: >-
+          Flag to indicate whether to update the ingress certificates after
+          cluster creation (default = \"true\")
+        type: bool
+        default: true
+      - name: private
+        description: >-
+          Flag to indicate whether the cluster is for a private cluster (default
+          = \"false\")
+        type: bool
+        default: false
+      - name: byo_certs
+        description: >-
+          Flag to indicate whether to use BYO certificates instead of creating
+          new ones (default = \"false\")
+        type: bool
+        default: false
+      - name: acme_registration_email
+        description: >-
+          Valid email for registration of LetsEncrypt certificate. This must be
+          changed if creating ingress certificates.
+        type: string
+        default: me@mydomain.com
+      - name: use_staging_certs
+        description: >-
+          Flag to indicate whether to generate staging or valid certificates.
+          Used for testing. Note quota limits on valid LetsEncrypt certificates.
+          (default = \"false\")
+        type: bool
+        default: false
+      - name: binary_offset
+        description: Path offset from current directory to store binaries
+        type: string
+        default: binaries
+      - name: install_offset
+        description: >-
+          Path offset from current working directory for install metadata
+          (default = install)
+        type: string
+        default: install
+      - name: openshift_version
+        description: OpenShift version to install
+        type: string
+        default: '4.10'
+        scope: module
+      - name: hyperthreading
+        description: Enable hyperthreading for node (default = \"Enabled\")
+        type: string
+        default: Enabled
+      - name: architecture
+        description: CPU architecture for node (default = \"amd64\")
+        type: string
+        default: amd64
+      - name: node_type
+        description: AWS instance type for node (default = \"m6i.4xlarge\")
+        type: string
+        default: m6i.4xlarge
+        scope: module
+      - name: volume_iops
+        description: Disk IOPS (default = 400)
+        type: string
+        default: '400'
+      - name: volume_size
+        description: Compute/worker node disk size in GB (default = 500)
+        type: string
+        default: '500'
+      - name: volume_type
+        description: >-
+          Type of disk for the node [standard io1 gp2 gp3 sc1 st1] (default =
+          \"io1\")
+        type: string
+        default: io1
+      - name: cluster_cidr
+        description: CIDR for the internal OpenShift network (default = 10.128.0.0/14)
+        type: string
+        default: 10.128.0.0/14
+      - name: cluster_host_prefix
+        description: Host prefix for internal OpenShift network (default = 23)
+        type: string
+        default: '23'
+      - name: network_type
+        description: >-
+          Type of software defined networking for internal OpenShift (default =
+          \"OpenShiftSDN\")
+        type: string
+        default: OpenShiftSDN
+      - name: service_network_cidr
+        description: >-
+          CIDR for the internal OpenShift service network (default =
+          172.30.0.0/16)
+        type: string
+        default: 172.30.0.0/16
+      - name: debug
+        description: Flag to indicate whether debug information is required for build
+        type: bool
+        default: false
+    outputs:
+      - name: id
+        description: ID of the created cluster
+      - name: name
+        description: Name of the cluster
+      - name: resource_group_name
+        description: Tag for deployed resources
+      - name: region
+        description: AWS location containing the cluster
+      - name: config_file_path
+        description: Path to the config file for the cluster
+      - name: consoleURL
+        description: URL for the cluster console
+      - name: serverURL
+        description: The url used to connect to the api of the cluster
+      - name: username
+        description: Username for the cluster
+      - name: password
+        description: Password for the cluster
+        sensitive: true
+      - name: token
+        description: The admin user token used to generate the cluster
+        sensitive: true
+      - name: bin_dir
+        description: Path to the client binaries
+      - name: platform
+        type:
+          lines:
+            - local.cluster_type
+        sensitive: true
+        description: Configuration values for the created cluster platform
     version: v1.0.0
 cloudProvider: aws
 id: github.com/cloud-native-toolkit/terraform-aws-ocp-sno
